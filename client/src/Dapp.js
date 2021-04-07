@@ -1,6 +1,6 @@
 import React, { Component, useEffect, useState } from "react";
 import getWeb3 from "./getWeb3";
-import { Button, Grid, makeStyles } from "@material-ui/core";
+import { Button, Grid, makeStyles, TextField } from "@material-ui/core";
 
 import DToken from "./contracts/DToken.json";
 import DTokenSale from "./contracts/DTokenSale.json";
@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme) => ({
     height: "100%",
     position: "absolute",
     backgroundColor: theme.palette.background.paper,
-    background:"linear-gradient(to right, #355c7d, #6c5b7b, #c06c84)" ,
+    background: "linear-gradient(to right, #355c7d, #6c5b7b, #c06c84)",
     boxShadow: theme.shadows[10],
   },
   heading: {
@@ -28,18 +28,37 @@ const useStyles = makeStyles((theme) => ({
   },
   input: {
     alignItems: "center",
-    border: `5px solid ${theme.palette.primary.light}`,
+    border: `5px solid ${theme.palette.secondary.light}`,
     padding: theme.spacing(2),
-      borderRadius: 10,
-      height: 300,
-      width: 400,
-      backgroundColor: "white",
-    color: theme.palette.primary.light
-    },
-    whiteListButton: {
-        height: 35,
-        backgroundColor: theme.palette.secondary.light,
-        marginTop: theme.spacing(2)
+    borderRadius: 10,
+    height: 350,
+    width: 400,
+    boxShadow: theme.shadows[11],
+    backgroundColor: "white",
+    color: theme.palette.primary.light,
+  },
+  whiteListStuff: {
+    display: "grid",
+    flexDirection: "row",
+  },
+  whiteListButton: {
+    height: 35,
+    width: 250,
+    backgroundColor: theme.palette.secondary.light,
+    marginTop: theme.spacing(2),
+    textTransform: "none",
+  },
+  buyCoinButton: {
+    height: 35,
+    width: 250,
+    backgroundColor: theme.palette.secondary.light,
+    marginTop: theme.spacing(2),
+    textTransform: "none",
+  },
+  tokenAmountInput: {
+    height: 30,
+    marginTop: theme.spacing(2),
+    marginLeft: theme.spacing(4),
   },
   submit: {
     margin: theme.spacing(3, 0, 2),
@@ -48,14 +67,18 @@ const useStyles = makeStyles((theme) => ({
 
 const Dapp = () => {
   const classes = useStyles();
-    const [state, setState] = useState({
-        web3: null,
-        accounts: [],
-        tokenInstance: null,
-        tokenSaleInstance: null,
-        kycInstance: null,
-        kycAddress: "",
+  const [state, setState] = useState({
+    web3: null,
+    accounts: [],
+    tokenInstance: null,
+    tokenSaleInstance: null,
+    kycInstance: null,
+    kycAddress: "",
+    tokenSaleAddress: null,
   });
+  const [dTokenInstance, setDTokenInstance] = useState(null);
+  const [infoLoaded, setInfoLoaded] = useState(false);
+  const [userTokens, setUserTokens] = useState(null);
 
   const setUpWeb3 = async () => {
     try {
@@ -83,15 +106,21 @@ const Dapp = () => {
         KycContract.networks[networkId] &&
           KycContract.networks[networkId].address
       );
-      setState((prevState) => ({
-        ...prevState,
-        web3: web3,
-        accounts: accounts,
+
+      setState(
+        (prevState) => ({
+          ...prevState,
+          web3: web3,
+          accounts: accounts,
           tokenInstance: tokenInstance,
           tokenSaleInstance: tokenSaleInstance,
           kycInstance: kycInstance,
+          tokenSaleAddress: DTokenSale.networks[networkId].address,
+        }),
+          updateUserTokens(tokenInstance, accounts[0])
 
-      }));
+      );
+      console.log(accounts)
     } catch (error) {
       alert(
         `Failed to load web3, accounts, or contract. Check console for details.`
@@ -108,15 +137,27 @@ const Dapp = () => {
     }));
   };
 
-    const handleAddToWhiteListButtonClicked = async() => {
-        await state.kycInstance.methods.setKycCompleted(state.kycAddress).send({ from: state.accounts[0] });
-        alert(`KYC for ${state.kycAddress} is completed`)
-    }
+  const handleAddToWhiteListButtonClicked = async () => {
+    await state.kycInstance.methods
+      .setKycCompleted(state.kycAddress)
+      .send({ from: state.accounts[0] });
+    alert(`KYC for ${state.kycAddress} is completed`);
+  };
+
+  const handleBuyTokenClicked = () => {};
+
+  const updateUserTokens = async (tokenInstance, account) => {
+    console.log(tokenInstance);
+    console.log(account);
+    let userTokens = await tokenInstance.methods.balanceOf(account).call();
+    setUserTokens(userTokens);
+  };
 
   useEffect(() => {
     setUpWeb3();
+    if (state.tokenInstance != null) updateUserTokens();
   }, []);
-
+  useEffect(() => {}, [setInfoLoaded]);
   return (
     <div>
       {!state.web3 ? (
@@ -124,12 +165,11 @@ const Dapp = () => {
       ) : (
         <div className={classes.paper}>
           <Grid className={classes.heading}>
-            <h1>DCoin Sale!</h1>
-            <p>Buy Today!</p>
+            <h1>DCoin </h1>
           </Grid>
           <Grid className={classes.input}>
             <h2>Kyc Whitelisting:</h2>
-            <div>
+            <div className={classes.whiteListStuff}>
               Address to allow:
               <input
                 type="text"
@@ -138,8 +178,49 @@ const Dapp = () => {
                 name="kycAddress"
                 onChange={(e) => handleInputChanges(e)}
               />
+              <Button
+                className={classes.whiteListButton}
+                onClick={handleAddToWhiteListButtonClicked}
+              >
+                Add to Whitelist
+              </Button>
             </div>
-            <Button className={classes.whiteListButton} onClick={handleAddToWhiteListButtonClicked}>Add to Whitelist</Button>
+            <Grid xs={8} item>
+              <h2>Buy some!</h2>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Button
+                  className={classes.buyCoinButton}
+                  onClick={handleBuyTokenClicked}
+                >
+                  Cop dat Coin! 😎
+                </Button>{" "}
+                <TextField
+                  size="small"
+                  id="outlined-number"
+                  label="Number"
+                  type="number"
+                  className={classes.tokenAmountInput}
+                  InputLabelProps={{
+                    shrink: true,
+                    padding: 0,
+                  }}
+                  InputProps={{
+                    padding: 0,
+                  }}
+                  inputProps={{ padding: 0 }}
+                  variant="outlined"
+                />
+              </div>
+            </Grid>
+            <Grid item xs={12}>
+              <h3>Your DDD: {!userTokens ? "---" : userTokens}</h3>
+            </Grid>
           </Grid>
         </div>
       )}
