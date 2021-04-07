@@ -1,14 +1,60 @@
 import React, { Component, useEffect, useState } from "react";
 import getWeb3 from "./getWeb3";
+import { Button, Grid, makeStyles } from "@material-ui/core";
 
 import DToken from "./contracts/DToken.json";
 import DTokenSale from "./contracts/DTokenSale.json";
 import KycContract from "./contracts/KycContract.json";
+
+const useStyles = makeStyles((theme) => ({
+  paper: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    backgroundColor: theme.palette.background.paper,
+    background:"linear-gradient(to right, #355c7d, #6c5b7b, #c06c84)" ,
+    boxShadow: theme.shadows[10],
+  },
+  heading: {
+    margin: theme.spacing(1),
+    backgroundColor: theme.palette.primary.main,
+    borderRadius: 10,
+    width: "75%",
+    textAlign: "center",
+    color: theme.palette.primary.contrastText,
+  },
+  input: {
+    alignItems: "center",
+    border: `5px solid ${theme.palette.primary.light}`,
+    padding: theme.spacing(2),
+      borderRadius: 10,
+      height: 300,
+      width: 400,
+      backgroundColor: "white",
+    color: theme.palette.primary.light
+    },
+    whiteListButton: {
+        height: 35,
+        backgroundColor: theme.palette.secondary.light,
+        marginTop: theme.spacing(2)
+  },
+  submit: {
+    margin: theme.spacing(3, 0, 2),
+  },
+}));
+
 const Dapp = () => {
-  const [state, setState] = useState({
-    web3: null,
-    accounts: [],
-    contract: null,
+  const classes = useStyles();
+    const [state, setState] = useState({
+        web3: null,
+        accounts: [],
+        tokenInstance: null,
+        tokenSaleInstance: null,
+        kycInstance: null,
+        kycAddress: "",
   });
 
   const setUpWeb3 = async () => {
@@ -41,7 +87,10 @@ const Dapp = () => {
         ...prevState,
         web3: web3,
         accounts: accounts,
-        contract: tokenInstance,
+          tokenInstance: tokenInstance,
+          tokenSaleInstance: tokenSaleInstance,
+          kycInstance: kycInstance,
+
       }));
     } catch (error) {
       alert(
@@ -50,6 +99,19 @@ const Dapp = () => {
       console.error(error);
     }
   };
+
+  const handleInputChanges = (event) => {
+    const { value, name } = event.target;
+    setState((prevState) => ({
+      ...prevState,
+      kycAddress: value,
+    }));
+  };
+
+    const handleAddToWhiteListButtonClicked = async() => {
+        await state.kycInstance.methods.setKycCompleted(state.kycAddress).send({ from: state.accounts[0] });
+        alert(`KYC for ${state.kycAddress} is completed`)
+    }
 
   useEffect(() => {
     setUpWeb3();
@@ -60,7 +122,26 @@ const Dapp = () => {
       {!state.web3 ? (
         <h1>Loading Web3, accounts, contracts, etc....</h1>
       ) : (
-                  <div>{ state.accounts[0]}</div>
+        <div className={classes.paper}>
+          <Grid className={classes.heading}>
+            <h1>DCoin Sale!</h1>
+            <p>Buy Today!</p>
+          </Grid>
+          <Grid className={classes.input}>
+            <h2>Kyc Whitelisting:</h2>
+            <div>
+              Address to allow:
+              <input
+                type="text"
+                placeholder="0x1234...."
+                value={state.kycAddress}
+                name="kycAddress"
+                onChange={(e) => handleInputChanges(e)}
+              />
+            </div>
+            <Button className={classes.whiteListButton} onClick={handleAddToWhiteListButtonClicked}>Add to Whitelist</Button>
+          </Grid>
+        </div>
       )}
     </div>
   );
