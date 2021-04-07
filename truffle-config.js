@@ -2,6 +2,8 @@ const path = require("path");
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 require("dotenv").config({path:"./.env"})
 const Mnemonic = process.env.MNEMONIC;
+const ROPSTEN_ENDPOINT = process.env.ROPSTEN_ENDPOINT;
+const GOERLI_ENPOINT = process.env.GOERLI_ENPOINT;
 const AccountIndex = 0;
 
 module.exports = {
@@ -19,6 +21,18 @@ module.exports = {
         return new HDWalletProvider(Mnemonic, "http://127.0.0.1:7545", AccountIndex);
       },
       network_id: 5777
+    },
+    ropsten_infura: {
+      provider: () => {
+        return new HDWalletProvider(process.env.MNEMONIC, ROPSTEN_ENDPOINT, AccountIndex)
+      },
+      network_id: 3,
+    },
+    goerli_infura: {
+      provider: () => {
+        return new HDWalletProvider(process.env.MNEMONIC, GOERLI_ENPOINT, AccountIndex)
+      },
+      network_id: 5,
     }
   },
   compilers: {

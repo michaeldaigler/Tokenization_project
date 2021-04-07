@@ -78,12 +78,8 @@ const Dapp = () => {
   });
   const [dTokenInstance, setDTokenInstance] = useState(null);
   const [infoLoaded, setInfoLoaded] = useState(false);
-    const [userTokens, setUserTokens] = useState(null);
-    const [tokensRequested, setTokenRequested] = useState("")
-    useEffect(() => {
-        setUpWeb3();
-        if (state.tokenInstance != null) updateUserTokens();
-      }, []);
+  const [userTokens, setUserTokens] = useState(null);
+  const [tokensRequested, setTokenRequested] = useState("");
 
   const setUpWeb3 = async () => {
     try {
@@ -122,19 +118,28 @@ const Dapp = () => {
           kycInstance: kycInstance,
           tokenSaleAddress: DTokenSale.networks[networkId].address,
         }),
-          updateUserTokens(tokenInstance, accounts[0])
-
+        updateUserTokens(tokenInstance, accounts[0])
       );
-        listenToTokenTransfer(tokenInstance, accounts[0]);
-      console.log(accounts)
+      listenToTokenTransfer(tokenInstance, accounts[0]);
+
+      setUpListeners(tokenInstance, accounts);
+
+      console.log(accounts);
     } catch (error) {
-    //   alert(
-    //     `Failed to load web3, accounts, or contract. Check console for details.`
-    //   );
       console.error(error);
     }
   };
+  const setUpListeners = (tokenInstance, accounts) => {
+    window.ethereum.on("accountsChanged", (_accounts) => {
+      updateUserTokens(tokenInstance, _accounts[0]);
+    });
 
+    window.ethereum.on("chainChanged", (chainId) => {
+      updateUserTokens(tokenInstance, accounts[0]);
+
+      window.location.reload();
+    });
+  };
   const handleInputChanges = (event) => {
     const { value, name } = event.target;
     setState((prevState) => ({
@@ -150,19 +155,24 @@ const Dapp = () => {
     alert(`KYC for ${state.kycAddress} is completed`);
   };
 
-    const listenToTokenTransfer = (tokenInstance, account) => {
-        tokenInstance.events.Transfer({to: account}).on("data", () => updateUserTokens(tokenInstance, account))
-    }
+  const listenToTokenTransfer = (tokenInstance, account) => {
+    tokenInstance.events
+      .Transfer({ to: account })
+      .on("data", () => updateUserTokens(tokenInstance, account));
+  };
 
-    const handleBuyTokenClicked = async () => {
-        console.log(state)
-        await state.tokenSaleInstance.methods.buyTokens(state.accounts[0]).send({ from: state.accounts[0], value: state.web3.utils.toWei(`${tokensRequested}`, "wei") });
-    };
+  const handleBuyTokenClicked = async () => {
+    console.log(state);
+    await state.tokenSaleInstance.methods.buyTokens(state.accounts[0]).send({
+      from: state.accounts[0],
+      value: state.web3.utils.toWei(`${tokensRequested}`, "wei"),
+    });
+  };
 
-    const handleTokensRequestedChanged = (event) => {
-        const { value } = event.target;
-        setTokenRequested(value);
-    }
+  const handleTokensRequestedChanged = (event) => {
+    const { value } = event.target;
+    setTokenRequested(value);
+  };
 
   const updateUserTokens = async (tokenInstance, account) => {
     console.log(tokenInstance);
@@ -171,8 +181,10 @@ const Dapp = () => {
     setUserTokens(userTokens);
   };
 
+  useEffect(() => {
+    setUpWeb3();
+  }, []);
 
-  useEffect(() => {}, [setInfoLoaded]);
   return (
     <div>
       {!state.web3 ? (
@@ -219,8 +231,8 @@ const Dapp = () => {
                   size="small"
                   id="outlined-number"
                   label="Wei"
-                                      type="number"
-                                      value={tokensRequested}
+                  type="number"
+                  value={tokensRequested}
                   className={classes.tokenAmountInput}
                   InputLabelProps={{
                     shrink: true,
@@ -230,8 +242,8 @@ const Dapp = () => {
                     padding: 0,
                   }}
                   inputProps={{ padding: 0 }}
-                                      variant="outlined"
-                                      onChange={handleTokensRequestedChanged}
+                  variant="outlined"
+                  onChange={handleTokensRequestedChanged}
                 />
               </div>
             </Grid>
