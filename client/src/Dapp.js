@@ -78,7 +78,12 @@ const Dapp = () => {
   });
   const [dTokenInstance, setDTokenInstance] = useState(null);
   const [infoLoaded, setInfoLoaded] = useState(false);
-  const [userTokens, setUserTokens] = useState(null);
+    const [userTokens, setUserTokens] = useState(null);
+    const [tokensRequested, setTokenRequested] = useState("")
+    useEffect(() => {
+        setUpWeb3();
+        if (state.tokenInstance != null) updateUserTokens();
+      }, []);
 
   const setUpWeb3 = async () => {
     try {
@@ -120,11 +125,12 @@ const Dapp = () => {
           updateUserTokens(tokenInstance, accounts[0])
 
       );
+        listenToTokenTransfer(tokenInstance, accounts[0]);
       console.log(accounts)
     } catch (error) {
-      alert(
-        `Failed to load web3, accounts, or contract. Check console for details.`
-      );
+    //   alert(
+    //     `Failed to load web3, accounts, or contract. Check console for details.`
+    //   );
       console.error(error);
     }
   };
@@ -144,7 +150,19 @@ const Dapp = () => {
     alert(`KYC for ${state.kycAddress} is completed`);
   };
 
-  const handleBuyTokenClicked = () => {};
+    const listenToTokenTransfer = (tokenInstance, account) => {
+        tokenInstance.events.Transfer({to: account}).on("data", () => updateUserTokens(tokenInstance, account))
+    }
+
+    const handleBuyTokenClicked = async () => {
+        console.log(state)
+        await state.tokenSaleInstance.methods.buyTokens(state.accounts[0]).send({ from: state.accounts[0], value: state.web3.utils.toWei(`${tokensRequested}`, "wei") });
+    };
+
+    const handleTokensRequestedChanged = (event) => {
+        const { value } = event.target;
+        setTokenRequested(value);
+    }
 
   const updateUserTokens = async (tokenInstance, account) => {
     console.log(tokenInstance);
@@ -153,10 +171,7 @@ const Dapp = () => {
     setUserTokens(userTokens);
   };
 
-  useEffect(() => {
-    setUpWeb3();
-    if (state.tokenInstance != null) updateUserTokens();
-  }, []);
+
   useEffect(() => {}, [setInfoLoaded]);
   return (
     <div>
@@ -203,8 +218,9 @@ const Dapp = () => {
                 <TextField
                   size="small"
                   id="outlined-number"
-                  label="Number"
-                  type="number"
+                  label="Wei"
+                                      type="number"
+                                      value={tokensRequested}
                   className={classes.tokenAmountInput}
                   InputLabelProps={{
                     shrink: true,
@@ -214,7 +230,8 @@ const Dapp = () => {
                     padding: 0,
                   }}
                   inputProps={{ padding: 0 }}
-                  variant="outlined"
+                                      variant="outlined"
+                                      onChange={handleTokensRequestedChanged}
                 />
               </div>
             </Grid>
