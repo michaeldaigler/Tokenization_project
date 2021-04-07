@@ -10,13 +10,10 @@ class App extends Component {
   runExample = async () => {
     const { accounts, contract } = this.state;
 
-    // Stores a given value, 5 by default.
     await contract.methods.set(5).send({ from: accounts[0] });
 
-    // Get the value from the contract to prove it worked.
     const response = await contract.methods.get().call();
 
-    // Update state with the result.
     this.setState({ storageValue: response });
   };
 
