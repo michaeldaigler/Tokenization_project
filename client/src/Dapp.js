@@ -65,6 +65,8 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const SUPPORTED_CHAIN_NETWORKS = [3,5777]
+
 const Dapp = () => {
   const classes = useStyles();
   const [state, setState] = useState({
@@ -79,7 +81,8 @@ const Dapp = () => {
   const [dTokenInstance, setDTokenInstance] = useState(null);
   const [infoLoaded, setInfoLoaded] = useState(false);
   const [userTokens, setUserTokens] = useState(null);
-  const [tokensRequested, setTokenRequested] = useState("");
+    const [tokensRequested, setTokenRequested] = useState("");
+    const [networkId, setNetwrokId] = useState(null)
 
   const setUpWeb3 = async () => {
     try {
@@ -107,6 +110,14 @@ const Dapp = () => {
         KycContract.networks[networkId] &&
           KycContract.networks[networkId].address
       );
+            console.log(networkId)
+        if (SUPPORTED_CHAIN_NETWORKS.includes(networkId) == false) {
+            setNetwrokId(networkId)
+            return (<div>
+                Check your chain
+            </div>);
+        }
+
 
       setState(
         (prevState) => ({
@@ -122,24 +133,24 @@ const Dapp = () => {
       );
       listenToTokenTransfer(tokenInstance, accounts[0]);
 
-      setUpListeners(tokenInstance, accounts);
+    //   setUpListeners(tokenInstance, accounts);
 
       console.log(accounts);
     } catch (error) {
       console.error(error);
     }
   };
-  const setUpListeners = (tokenInstance, accounts) => {
-    window.ethereum.on("accountsChanged", (_accounts) => {
-      updateUserTokens(tokenInstance, _accounts[0]);
-    });
+  // const setUpListeners = (tokenInstance, accounts) => {
+  //   window.ethereum.on("accountsChanged", (_accounts) => {
+  //     updateUserTokens(tokenInstance, _accounts[0]);
+  //   });
 
-    window.ethereum.on("chainChanged", (chainId) => {
-      updateUserTokens(tokenInstance, accounts[0]);
+  //   window.ethereum.on("chainChanged", (chainId) => {
+  //     updateUserTokens(tokenInstance, accounts[0]);
 
-      window.location.reload();
-    });
-  };
+  //     window.location.reload();
+  //   });
+  // };
   const handleInputChanges = (event) => {
     const { value, name } = event.target;
     setState((prevState) => ({
@@ -149,6 +160,7 @@ const Dapp = () => {
   };
 
   const handleAddToWhiteListButtonClicked = async () => {
+    console.log(state.accounts[0])
     await state.kycInstance.methods
       .setKycCompleted(state.kycAddress)
       .send({ from: state.accounts[0] });
@@ -167,6 +179,7 @@ const Dapp = () => {
       from: state.accounts[0],
       value: state.web3.utils.toWei(`${tokensRequested}`, "wei"),
     });
+    setTokenRequested("")
   };
 
   const handleTokensRequestedChanged = (event) => {
@@ -185,10 +198,12 @@ const Dapp = () => {
     setUpWeb3();
   }, []);
 
+
+
   return (
     <div>
       {!state.web3 ? (
-        <h1>Loading Web3, accounts, contracts, etc....</h1>
+        <h1>Loading Web3, accounts, contracts, etc...</h1>
       ) : (
         <div className={classes.paper}>
           <Grid className={classes.heading}>
